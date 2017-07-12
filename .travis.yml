@@ -1,0 +1,22 @@
+sudo: false
+language: cpp
+dist: trusty
+compiler:
+  - clang
+os:
+  - linux
+addons:
+  apt:
+    packages:
+      -pkg-config
+      -libssl-dev
+      -libsasl2-dev 
+
+before_script:
+  - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:~/deps/libbson/lib/pkgconfig/
+script:
+  - clang --version
+  - ./install_deps.sh
+  - mkdir build
+  - cd build
+  - cmake ..
