@@ -38,6 +38,8 @@ Checkout [src/client/client.cpp](src/client/client.cpp) for an example implement
 On the server-side, please ensure that you're starting the TCP variant of the rosbridge server.
 Websockets are currently not supported.
 
+In order to use the recommended, full-duplex BSON variant of the library, you need a recent rosbridge version that has been released after March 15 2017. At the time of writing this README, there is no release after that date. So right now, you need to install  [rosbridge](https://github.com/RobotWebTools/rosbridge_suite) from the repository. Everything after commit [f0844e2](https://github.com/RobotWebTools/rosbridge_suite/commit/f0844e24d05ded3c4ab803dc235c339e854175e8) should be fine.
+
 ## Running the unit tests
 Please ensure that the you executed cmake with '-Dtest=on' before you continue.
 When the library and the unit tests are compiled, execute the following commands on a machine running ROS to setup a minimal testing environment:
