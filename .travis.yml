@@ -8,9 +8,9 @@ os:
 addons:
   apt:
     packages:
-      -pkg-config
-      -libssl-dev
-      -libsasl2-dev 
+      - pkg-config
+      - libssl-dev
+      - libsasl2-dev 
 
 before_script:
   - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:~/deps/libbson/lib/pkgconfig/
