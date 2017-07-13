@@ -48,7 +48,7 @@ roslaunch rosbridge_server rosbridge_tcp.launch bson_only_mode:=True
 Please ensure that the you executed cmake with '-Dtest=on' before you continue.
 When the library and the unit tests are compiled, execute the following commands on a machine running ROS to setup a minimal testing environment:
 ```
-roslaunch rosbridge_server rosbridge_tcp.launch
+roslaunch rosbridge_server rosbridge_tcp.launch # plus bson_only_mode:=True if you want to use BSON
 rostopic pub /test std_msgs/String a5424890996794277159554918
 rosrun rospy_tutorials add_two_ints_server
 ```
