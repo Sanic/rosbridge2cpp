@@ -39,6 +39,10 @@ On the server-side, please ensure that you're starting the TCP variant of the ro
 Websockets are currently not supported.
 
 In order to use the recommended, full-duplex BSON variant of the library, you need a recent rosbridge version that has been released after March 15 2017. At the time of writing this README, there is no release after that date. So right now, you need to install  [rosbridge](https://github.com/RobotWebTools/rosbridge_suite) from the repository. Everything after commit [f0844e2](https://github.com/RobotWebTools/rosbridge_suite/commit/f0844e24d05ded3c4ab803dc235c339e854175e8) should be fine.
+When you've rosbridge_suite downloaded and put in your ROS workspace, you can launch rosbridge with BSON-Mode like this:
+```
+roslaunch rosbridge_server rosbridge_tcp.launch bson_only_mode:=True
+```
 
 ## Running the unit tests
 Please ensure that the you executed cmake with '-Dtest=on' before you continue.
