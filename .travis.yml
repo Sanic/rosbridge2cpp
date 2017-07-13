@@ -16,6 +16,7 @@ before_script:
   - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:~/deps/libbson/lib/pkgconfig/
 script:
   - clang --version
+  - chmod u+x install_deps.sh
   - ./install_deps.sh
   - mkdir build
   - cd build
