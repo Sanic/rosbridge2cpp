@@ -42,8 +42,8 @@ ADD_LIBRARY( rosbridge2cpp SHARED
 	src/ros_service.cpp 
 	src/ros_tf_broadcaster.cpp 
 )
-target_link_libraries(rosbridge2cpp-client ${LIBBSON_LIBRARIES})
-target_link_libraries(rosbridge2cpp ${LIBBSON_LIBRARIES})
+target_link_libraries(rosbridge2cpp-client ${LIBBSON_LIBRARIES} -lpthread)
+target_link_libraries(rosbridge2cpp ${LIBBSON_LIBRARIES} -lpthread)
 #
 #################################
 ## Testing
