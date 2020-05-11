@@ -110,7 +110,7 @@ namespace rosbridge2cpp {
 		return SendMessage(str_repr);
 	}
 
-	bool ROSBridge::QueueMessage(const std::string& topic_name, int queue_size, ROSBridgePublishMsg& msg)
+	bool ROSBridge::QueueMessage(const std::string& topic_name, size_t queue_size, ROSBridgePublishMsg& msg)
 	{
 		assert(bson_only_mode_); // queueing is not supported for json data
 

@@ -65,7 +65,7 @@ namespace rosbridge2cpp {
 
 		bool SendMessage(ROSBridgeMsg &msg);
 
-		bool QueueMessage(const std::string& topic_name, int queue_size, ROSBridgePublishMsg& msg);
+		bool QueueMessage(const std::string& topic_name, size_t queue_size, ROSBridgePublishMsg& msg);
 
 
 		// Registration function for topic callbacks.
@@ -142,9 +142,9 @@ namespace rosbridge2cpp {
 
 		std::thread publisher_queue_thread_;
 		spinlock change_publisher_queues_mutex_;
-		std::unordered_map<std::string, int> publisher_topics_; // points to index in publisher_queues_
+		std::unordered_map<std::string, size_t> publisher_topics_; // points to index in publisher_queues_
 		std::vector<std::queue<bson_t*>> publisher_queues_;	 // data to publish on the queue thread
-		int current_publisher_queue_ = 0;
+		size_t current_publisher_queue_ = 0;
 		bool run_publisher_queue_thread_ = true;
 		std::chrono::system_clock::time_point LastDataSendTime; // watchdog for send thread. Socket sometimes blocks infinitely.
 	};
