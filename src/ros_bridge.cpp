@@ -37,7 +37,6 @@ namespace rosbridge2cpp{
     if(bson_only_mode()){
       bson_t message = BSON_INITIALIZER;
       msg.ToBSON(message);
-      size_t offset;
 
       const uint8_t *bson_data = bson_get_data (&message);
       uint32_t bson_size = message.len;

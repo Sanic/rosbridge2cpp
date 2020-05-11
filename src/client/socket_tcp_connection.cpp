@@ -75,12 +75,12 @@ namespace rosbridge2cpp{
       std::cout << "[TCPConnection] Received bytes: " << count << std::endl;
       if(count == 0){
         if(!terminate_receiver_thread_)
-          ReportError(TransportError ::CONNECTION_CLOSED);
+          ReportError(TransportError ::R2C_CONNECTION_CLOSED);
         return 1; // connection closed
       }
       if(count < 0){
         if(!terminate_receiver_thread_)
-          ReportError(TransportError ::SOCKET_ERROR);
+          ReportError(TransportError ::R2C_SOCKET_ERROR);
         return 2; // error while receiving from socket
       }
 

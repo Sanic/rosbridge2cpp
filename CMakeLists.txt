@@ -9,21 +9,37 @@
 cmake_minimum_required(VERSION 2.8)
 option(test "Build all tests." OFF) # Makes boolean 'test' available.
 
-find_package(PkgConfig REQUIRED)
-pkg_search_module(LIBBSON REQUIRED libbson-1.0)
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+	pkg_search_module(LIBBSON REQUIRED libbson-1.0)
+else()
+	message(STATUS "Didn't fount PkgConfig, please specify the path yourself")
+	set(LIBBSON_DIR "" CACHE PATH "Install directory of libbson. Should contain /include and /lib")
+	set(LIBBSON_INCLUDE_DIRS "${LIBBSON_DIR}/include")
+	set(LIBBSON_LIBRARY_DIRS "${LIBBSON_DIR}/lib")
+	set(LIBBSON_CFLAGS_OTHER "-I${LIBBSON_INCLUDE_DIRS}/libbson-1.0")
+	set(LIBBSON_LIBRARIES "bson-static-1.0.lib" CACHE STRING "Lib file. Different between platforms")
+endif()
 
 set(PROJECT_NAME rosbridge2cpp)
 project(${PROJECT_NAME})
 
-set(CMAKE_CXX_FLAGS "-g -Wall")
-add_definitions(-std=c++11)
-add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
+if(NOT WIN32)
+	set(CMAKE_CXX_FLAGS "-g -Wall")
+endif()
 
+set(CXX_STANDARD C++11)
+add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
+add_definitions(-DBSON_STATIC=1)
 
 include_directories(${LIBBSON_INCLUDE_DIRS})
 link_directories(${LIBBSON_LIBRARY_DIRS})
 add_definitions(${LIBBSON_CFLAGS_OTHER})
 set(LIBS ${LIBS} ${LIBBSON_LIBRARIES})
+
+if(WIN32 AND NOT PkgConfig_FOUND)
+	set(LIBS ${LIBS} "ws2_32") # Needed by libbson on windows 
+endif()
 
 INCLUDE_DIRECTORIES( include)
 ADD_EXECUTABLE( rosbridge2cpp-client
@@ -36,14 +52,14 @@ ADD_EXECUTABLE( rosbridge2cpp-client
 )
 
 ADD_LIBRARY( rosbridge2cpp SHARED
-	src/client/socket_tcp_connection.cpp 
+#	src/client/socket_tcp_connection.cpp #Not needed for the lib
 	src/ros_bridge.cpp 
 	src/ros_topic.cpp 
 	src/ros_service.cpp 
 	src/ros_tf_broadcaster.cpp 
 )
-target_link_libraries(rosbridge2cpp-client ${LIBBSON_LIBRARIES})
-target_link_libraries(rosbridge2cpp ${LIBBSON_LIBRARIES})
+target_link_libraries(rosbridge2cpp-client ${LIBS})
+target_link_libraries(rosbridge2cpp ${LIBS})
 #
 #################################
 ## Testing
