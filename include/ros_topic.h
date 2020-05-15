@@ -16,89 +16,92 @@
 using json = rapidjson::Document;
 
 namespace rosbridge2cpp{
-  class ROSTopic {
-    public:
-      // TODO: Implement setter of other options
-      ROSTopic (ROSBridge &ros, std::string topic_name, std::string message_type) : 
-        ros_(ros), topic_name_(topic_name), message_type_(message_type){
-        }
 
-      // Subscribes to a ROS Topic and registers a callback function
-      // for incoming messages
-      // Multiple callback functions for the same topic within the same instance
-      // can be registered.
-      // Please note, that these callbacks shouldn't be anonymous entities such as lambdas,
-      // to allow to them to unregister them with unsubscribe()
-      //
-      // For every incoming message, the callback function will receive the "msg" 
-      // field of the incoming ROSBridge packet for the given topic
-      //
-      // *WARNING* When using rapidjson transmission, be aware of moving operations 
-      // in the topic callbacks.
-      // Things like:
-      // std::string x = message.msg_json_["data"];
-      // in the callbacks will move the data from the 
-      // the json result to the local variable
-      // When this happens, other callbacks that receive the same message
-      // will read 'Null' on msg_json_
-      void Subscribe(FunVrROSPublishMsg callback);
+	class ROSTopic {
+	public:
+		ROSTopic(ROSBridge &ros, std::string topic_name, std::string message_type, int queue_size = 10)
+		: ros_(ros)
+		, topic_name_(topic_name)
+		, message_type_(message_type)
+		, queue_size_(queue_size)
+		{
+		}
 
-      // Unsubscribe from a given topic
-      // If multiple callbacks for this topic have been registered,
-      // the given callback will be unregistered in the ROSBridge WITHOUT
-      // sending 'unsubscribe' to the rosbridge server.
-      // If you're passing the last registered callback to this function,
-      // it will be unregistered in the ROSBridge instance
-      // AND 'unsubscribe' will be send to the server
-      void Unsubscribe(FunVrROSPublishMsg callback);
+	// Subscribes to a ROS Topic and registers a callback function
+	// for incoming messages
+	// Multiple callback functions for the same topic within the same instance
+	// can be registered.
+	// Please note, that these callbacks shouldn't be anonymous entities such as lambdas,
+	// to allow to them to unregister them with unsubscribe()
+	//
+	// For every incoming message, the callback function will receive the "msg"
+	// field of the incoming ROSBridge packet for the given topic
+	//
+	// *WARNING* When using rapidjson transmission, be aware of moving operations
+	// in the topic callbacks.
+	// Things like:
+	// std::string x = message.msg_json_["data"];
+	// in the callbacks will move the data from the
+	// the json result to the local variable
+	// When this happens, other callbacks that receive the same message
+	// will read 'Null' on msg_json_
+	ROSCallbackHandle<FunVrROSPublishMsg> Subscribe(FunVrROSPublishMsg callback);
 
-      // Advertise as a publisher for this topic
-      void Advertise();
+	// Unsubscribe from a given topic
+	// If multiple callbacks for this topic have been registered,
+	// the given callback will be unregistered in the ROSBridge WITHOUT
+	// sending 'unsubscribe' to the rosbridge server.
+	// If you're passing the last registered callback to this function,
+	// it will be unregistered in the ROSBridge instance
+	// AND 'unsubscribe' will be send to the server
+	bool Unsubscribe(const ROSCallbackHandle<FunVrROSPublishMsg>& callback_handle);
 
-      // Unadvertise as a publisher for this topic
-      void Unadvertise();
+	// Advertise as a publisher for this topic
+	bool Advertise();
 
-      // Publish a message over this topic.
-      // If advertise() has not been called before, this will be done in this method beforehand.
-      // Please make sure that the message matches the type of the topic,
-      // since this will NOT be valided before sending it to the rosbridge.
-      //
-      // @deprecated, use void Publish(rapidjson::Value &message);
-      // void Publish(json &message);
+	// Unadvertise as a publisher for this topic
+	bool Unadvertise();
 
-      // Publish a message over this topic.
-      // If advertise() has not been called before, this will be done in this method beforehand.
-      // Please make sure that the message matches the type of the topic,
-      // since this will NOT be valided before sending it to the rosbridge.
-      void Publish(rapidjson::Value &message);
-      void Publish(bson_t *message);
+	// Publish a message over this topic.
+	// If advertise() has not been called before, this will be done in this method beforehand.
+	// Please make sure that the message matches the type of the topic,
+	// since this will NOT be valided before sending it to the rosbridge.
+	//
+	// @deprecated, use void Publish(rapidjson::Value &message);
+	// void Publish(json &message);
 
-      std::string GeneratePublishID();
+	// Publish a message over this topic.
+	// If advertise() has not been called before, this will be done in this method beforehand.
+	// Please make sure that the message matches the type of the topic,
+	// since this will NOT be valided before sending it to the rosbridge.
+	bool Publish(rapidjson::Value &message);
+	bool Publish(bson_t *message);
 
-      std::string TopicName(){
-        return topic_name_;
-      }
+	std::string GeneratePublishID();
 
-    private:
-      ROSBridge &ros_;
-      std::string topic_name_;
-      std::string message_type_;
+	std::string TopicName() {
+		return topic_name_;
+	}
 
-      // Optional parameters and it's defaults
-      bool is_advertised_ = false;
-      std::string compression_ = "none";
-      int throttle_rate_ = 0;
-      bool latch_ = false;
-      int queue_size_ = 100;
-      int queue_length_ = 0;
+	private:
+		ROSBridge &ros_;
+		std::string topic_name_;
+		std::string message_type_;
 
-      // Householding variables
-      std::string advertise_id_ = "";
-      std::string subscribe_id_ = "";
+		// Optional parameters and it's defaults
+		bool is_advertised_ = false;
+		std::string compression_ = "none";
+		int throttle_rate_ = 0;
+		bool latch_ = false;
 
-      // Count how many callbacks are currently registered in the ROSBridge instance
-      int subscription_counter_ = 0;
+		// number of messages queued for remote publisher/subscriber within rosbridge AND local publisher queue (local subscriber queue is not supported at the moment)
+		int queue_size_ = 10;
 
-      // std::list<FunVcrJSON> _callbacks;
-  };
+		// Householding variables
+		std::string advertise_id_ = "";
+		std::string subscribe_id_ = "";
+
+		// Count how many callbacks are currently registered in the ROSBridge instance
+		int subscription_counter_ = 0;
+	};
 }

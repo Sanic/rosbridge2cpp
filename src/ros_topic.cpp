@@ -1,157 +1,187 @@
 #include "ros_topic.h"
 
-namespace rosbridge2cpp{
-  void ROSTopic::Subscribe(FunVrROSPublishMsg callback){
-    ros_.RegisterTopicCallback(topic_name_, callback); // Register callback in ROSBridge
-    subscription_counter_++;
+namespace rosbridge2cpp {
 
-    // Only send subscribe when this ROSTopic hasn't sent this command before
-    if(subscribe_id_!="")
-      return;
+	ROSCallbackHandle<FunVrROSPublishMsg> ROSTopic::Subscribe(FunVrROSPublishMsg callback)
+	{
+		++subscription_counter_;
 
-    subscribe_id_ = "";
-    subscribe_id_.append("subscribe:");
-    subscribe_id_.append(topic_name_);
-    subscribe_id_.append(":");
-    subscribe_id_.append(std::to_string(++ros_.id_counter));
+		// Only send subscribe when this ROSTopic hasn't sent this command before
+		if (subscribe_id_ == "") {
+			subscribe_id_.append("subscribe:");
+			subscribe_id_.append(topic_name_);
+			subscribe_id_.append(":");
+			subscribe_id_.append(std::to_string(++ros_.id_counter));
 
-    ROSBridgeSubscribeMsg cmd(true);
-    cmd.id_ = subscribe_id_;
-    cmd.topic_ = topic_name_;
-    cmd.type_ = message_type_;
-    cmd.compression_ = compression_;
-    cmd.throttle_rate_ = throttle_rate_;
-    cmd.queue_length_ = queue_length_;
+			ROSBridgeSubscribeMsg cmd(true);
+			cmd.id_ = subscribe_id_;
+			cmd.topic_ = topic_name_;
+			cmd.type_ = message_type_;
+			cmd.compression_ = compression_;
+			cmd.throttle_rate_ = throttle_rate_;
+			cmd.queue_length_ = queue_size_;
 
-    ros_.SendMessage(cmd);
-  }
+			if (!ros_.SendMessage(cmd))
+			{
+				subscribe_id_ = "";
+			}
+		}
 
-  void ROSTopic::Unsubscribe(FunVrROSPublishMsg callback){
-    // We've no active subscription
-    if(subscribe_id_ == "") 
-      return;
+		if (subscribe_id_ != "")
+		{
+			// Register callback in ROSBridge
+			ROSCallbackHandle<FunVrROSPublishMsg> handle(callback);
+			ros_.RegisterTopicCallback(topic_name_, handle); // Register callback in ROSBridge
+			return handle;
+		}
 
-    if(!ros_.UnregisterTopicCallback(topic_name_, callback)){ // Unregister callback in ROSBridge
-      // failed to unregister callback - maybe the method is different from already registered callbacks
-      std::cerr << "[ROSTopic] Passed unknown callback to ROSTopic::unsubscribe. This callback is not registered in the ROSBridge instance. Aborting..." << std::endl;
-      return;
-    }
+		subscribe_id_ = "";
+		return ROSCallbackHandle<FunVrROSPublishMsg>();
+	}
 
-    subscription_counter_--;
+	bool ROSTopic::Unsubscribe(const ROSCallbackHandle<FunVrROSPublishMsg>& callback_handle)
+	{
+		// We've no active subscription
+		if (subscribe_id_ == "")
+			return false;
 
-    if(subscription_counter_ > 0)
-      return;
+		if (!ros_.UnregisterTopicCallback(topic_name_, callback_handle)) { // Unregister callback in ROSBridge
+			// failed to unregister callback - maybe the method is different from already registered callbacks
+			std::cerr << "[ROSTopic] Passed unknown callback to ROSTopic::unsubscribe. This callback is not registered in the ROSBridge instance. Aborting..." << std::endl;
+			return false;
+		}
 
-    std::cout << "[ROSTopic] No callbacks registered anymore - unsubscribe from topic" << std::endl;
-    // Handle unsubscription when no callback is registered anymore
-    // rapidjson::Document cmd;
-    // cmd.SetObject();
+		--subscription_counter_;
 
-    ROSBridgeUnsubscribeMsg cmd(true);
-    cmd.id_ = subscribe_id_;
-    cmd.topic_ =  topic_name_;
+		if (subscription_counter_ > 0)
+			return true;
 
-    ros_.SendMessage(cmd);
+		std::cout << "[ROSTopic] No callbacks registered anymore - unsubscribe from topic" << std::endl;
+		// Handle unsubscription when no callback is registered anymore
+		//rapidjson::Document cmd;
+		//cmd.SetObject();
 
-    subscribe_id_ = "";
-    subscription_counter_ = 0; // shouldn't be necessary ...
-  }
+		ROSBridgeUnsubscribeMsg cmd(true);
+		cmd.id_ = subscribe_id_;
+		cmd.topic_ = topic_name_;
 
-  void ROSTopic::Advertise(){
-    if(is_advertised_) 
-      return;
+		if (ros_.SendMessage(cmd)) {
+			subscribe_id_ = "";
+			subscription_counter_ = 0; // shouldn't be necessary ...
+			return true;
+		}
+		return false;
+	}
 
-    advertise_id_ = "";
-    advertise_id_.append("advertise:");
-    advertise_id_.append(topic_name_);
-    advertise_id_.append(":");
-    advertise_id_.append(std::to_string(++ros_.id_counter));
+	bool ROSTopic::Advertise()
+	{
+		if (is_advertised_)
+			return true;
 
-    ROSBridgeAdvertiseMsg cmd(true);
-    cmd.id_ = advertise_id_;
-    cmd.topic_ =  topic_name_;
-    cmd.type_ =  message_type_;
-    cmd.latch_ =  latch_;
-    cmd.queue_size_ =  queue_size_;
+		advertise_id_ = "";
+		advertise_id_.append("advertise:");
+		advertise_id_.append(topic_name_);
+		advertise_id_.append(":");
+		advertise_id_.append(std::to_string(++ros_.id_counter));
 
-    ros_.SendMessage(cmd);
+		ROSBridgeAdvertiseMsg cmd(true);
+		cmd.id_ = advertise_id_;
+		cmd.topic_ = topic_name_;
+		cmd.type_ = message_type_;
+		cmd.latch_ = latch_;
+		cmd.queue_size_ = queue_size_;
 
-    is_advertised_ = true;
-  }
-  void ROSTopic::Unadvertise(){
-    if(!is_advertised_)
-      return;
+		if (ros_.SendMessage(cmd)) {
+			is_advertised_ = true;
+		}
+		return is_advertised_;
+	}
 
-    ROSBridgeUnadvertiseMsg cmd(true);
-    cmd.id_ = advertise_id_;
-    cmd.topic_ =  topic_name_;
+	bool ROSTopic::Unadvertise()
+	{
+		if (!is_advertised_)
+			return true;
 
-    ros_.SendMessage(cmd);
+		ROSBridgeUnadvertiseMsg cmd(true);
+		cmd.id_ = advertise_id_;
+		cmd.topic_ = topic_name_;
 
-    is_advertised_ = false;
-  }
-  // void ROSTopic::Publish(json &message){
-  //   if(!is_advertised_)
-  //     Advertise();
+		if (ros_.SendMessage(cmd)) {
+			is_advertised_ = false;
+		}
+		return !is_advertised_;
+	}
 
-  //   std::string publish_id;
-  //   publish_id.append("publish:");
-  //   publish_id.append(topic_name_);
-  //   publish_id.append(":");
-  //   publish_id.append(std::to_string(++ros_.id_counter));
+	// void ROSTopic::Publish(json &message){
+	//	if(!is_advertised_)
+	//	Advertise();
 
-  //   rapidjson::Document cmd;
-  //   cmd.SetObject();
-  //   cmd.AddMember("op","publish", cmd.GetAllocator());
-  //   cmd.AddMember("id", publish_id, cmd.GetAllocator());
-  //   cmd.AddMember("topic", topic_name_, cmd.GetAllocator());
-  //   cmd.AddMember("msg", message, cmd.GetAllocator());
-  //   cmd.AddMember("latch", latch_, cmd.GetAllocator());
+	//   std::string publish_id;
+	//   publish_id.append("publish:");
+	//   publish_id.append(topic_name_);
+	//   publish_id.append(":");
+	//   publish_id.append(std::to_string(++ros_.id_counter));
 
-  //   std::cout << "[ROSTopic] Publishing data " << Helper::get_string_from_rapidjson(cmd);
+	//   rapidjson::Document cmd;
+	//   cmd.SetObject();
+	//   cmd.AddMember("op","publish", cmd.GetAllocator());
+	//   cmd.AddMember("id", publish_id, cmd.GetAllocator());
+	//   cmd.AddMember("topic", topic_name_, cmd.GetAllocator());
+	//   cmd.AddMember("msg", message, cmd.GetAllocator());
+	//   cmd.AddMember("latch", latch_, cmd.GetAllocator());
 
+	//   std::cout << "[ROSTopic] Publishing data " << Helper::get_string_from_rapidjson(cmd);
 
-  //   ros_.SendMessage(cmd);
-  // }
+	//   ros_.SendMessage(cmd);
+	// }
 
-  void ROSTopic::Publish(rapidjson::Value &message){
-    if(!is_advertised_)
-      Advertise();
+	bool ROSTopic::Publish(rapidjson::Value &message)
+	{
+		if (!is_advertised_) {
+			if (!Advertise()) {
+				return false;
+			}
+		}
 
-    std::string publish_id = GeneratePublishID();
+		std::string publish_id = GeneratePublishID();
 
-    ROSBridgePublishMsg cmd(true);
-    cmd.id_ =  publish_id;
-    cmd.topic_ =  topic_name_;
-    cmd.msg_json_ =  message;
-    cmd.latch_ =  latch_;
+		ROSBridgePublishMsg cmd(true);
+		cmd.id_ = publish_id;
+		cmd.topic_ = topic_name_;
+		cmd.msg_json_ = message;
+		cmd.latch_ = latch_;
 
-    ros_.SendMessage(cmd);
-  }
+		return ros_.QueueMessage(topic_name_, queue_size_, cmd);
+	}
 
-  void ROSTopic::Publish(bson_t *message){
-    if(!is_advertised_)
-      Advertise();
+	bool ROSTopic::Publish(bson_t *message)
+	{
+		if (!is_advertised_) {
+			if (!Advertise()) {
+				return false;
+			}
+		}
 
-    assert(message);
+		assert(message);
 
-    std::string publish_id = GeneratePublishID();
+		std::string publish_id = GeneratePublishID();
 
-    ROSBridgePublishMsg cmd(true);
-    cmd.id_ =  publish_id;
-    cmd.topic_ =  topic_name_;
-    cmd.msg_bson_ =  message;
-    cmd.latch_ =  latch_;
+		ROSBridgePublishMsg cmd(true);
+		cmd.id_ = publish_id;
+		cmd.topic_ = topic_name_;
+		cmd.msg_bson_ = message;
+		cmd.latch_ = latch_;
 
-    ros_.SendMessage(cmd);
-  }
+		return ros_.QueueMessage(topic_name_, queue_size_, cmd);
+	}
 
-  std::string ROSTopic::GeneratePublishID(){
-    std::string publish_id;
-    publish_id.append("publish:");
-    publish_id.append(topic_name_);
-    publish_id.append(":");
-    publish_id.append(std::to_string(++ros_.id_counter));
-    return publish_id;
-  }
+	std::string ROSTopic::GeneratePublishID()
+	{
+		std::string publish_id;
+		publish_id.append("publish:");
+		publish_id.append(topic_name_);
+		publish_id.append(":");
+		publish_id.append(std::to_string(++ros_.id_counter));
+		return publish_id;
+	}
 }

@@ -18,9 +18,9 @@
 using namespace rosbridge2cpp;
 
 void connection_error_handler(TransportError err) {
-  if(err == TransportError ::CONNECTION_CLOSED)
+  if(err == TransportError ::R2C_CONNECTION_CLOSED)
     std::cout << "Connection closed - You should reinit ROSBridge" << std::endl;
-  if(err == TransportError ::SOCKET_ERROR)
+  if(err == TransportError ::R2C_SOCKET_ERROR)
     std::cout << "Error on ROSBridge Socket - You should reinit ROSBridge" << std::endl;
 }
 
