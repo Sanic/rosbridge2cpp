@@ -151,7 +151,8 @@ namespace rosbridge2cpp {
 		cmd.msg_json_ = message;
 		cmd.latch_ = latch_;
 
-		return ros_.QueueMessage(topic_name_, queue_size_, cmd);
+		//Queue is not implemented for JSON
+		return ros_.SendMessage(cmd);
 	}
 
 	bool ROSTopic::Publish(bson_t *message)
