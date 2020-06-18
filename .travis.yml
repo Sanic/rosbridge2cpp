@@ -1,6 +1,6 @@
 sudo: false
 language: cpp
-dist: trusty
+dist: xenial
 compiler:
   - clang
 os:
