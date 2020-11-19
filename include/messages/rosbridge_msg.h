@@ -164,7 +164,7 @@ public:
 
 protected:
 	// key must be valid as long as 'd' lives!
-	void add_if_value_changed(rapidjson::Document &d, rapidjson::Document::AllocatorType& alloc, const char* key, std::string value)
+	void add_if_value_changed(rapidjson::Document &d, rapidjson::Document::AllocatorType& alloc, const char* key, const std::string& value)
 	{
 		if (!value.empty())
 			d.AddMember(rapidjson::StringRef(key), value, alloc);
@@ -177,7 +177,7 @@ protected:
 			d.AddMember(rapidjson::StringRef(key), value, alloc);
 	}
 
-	void add_if_value_changed(bson_t &bson, const char* key, std::string value)
+	void add_if_value_changed(bson_t &bson, const char* key, const std::string& value)
 	{
 		if (!value.empty())
 			BSON_APPEND_UTF8(&bson, key, value.c_str());
