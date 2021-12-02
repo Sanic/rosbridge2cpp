@@ -7,6 +7,9 @@
 
 
 cmake_minimum_required(VERSION 2.8)
+set(PROJECT_NAME rosbridge2cpp)
+project(${PROJECT_NAME})
+
 option(test "Build all tests." OFF) # Makes boolean 'test' available.
 
 find_package(PkgConfig QUIET)
@@ -21,10 +24,9 @@ else()
 	set(LIBBSON_LIBRARIES "bson-static-1.0.lib" CACHE STRING "Lib file. Different between platforms")
 endif()
 
-set(PROJECT_NAME rosbridge2cpp)
-project(${PROJECT_NAME})
-
 if(NOT WIN32)
+	find_package(Threads)
+	set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})	
 	set(CMAKE_CXX_FLAGS "-g -Wall")
 endif()
 
