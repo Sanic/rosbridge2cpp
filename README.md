@@ -9,12 +9,22 @@ This abstraction allows you to use this library in different contexts, for examp
 Please note that this library is in an early development stage and features are added as needed. 
 Even though the library supports JSON and BSON, it's strongly recommended to use BSON.
 
+## Dependencies
+
+Before you can compile the library, you need to install [websocketpp](https://github.com/zaphoyd/websocketpp), [jsoncpp](https://github.com/open-source-parsers/jsoncpp), and [libbson](https://github.com/mongodb/libbson).
+
+```
+sudo apt update
+sudo apt install -y libwebsocketpp-dev libjsoncpp-dev libbson-dev
+```
+
+If you want to run rosbridge on the same machine:
+```
+sudo apt install -y ros-${ROS_DISTRO}-rosbridge-suite
+```
+
 ## Compiling the library
 
-Before you can compile the library, you need to install [libbson](https://github.com/mongodb/libbson). This can be accomplished by:
-```
-sudo apt install libbson-dev
-```
 Now you can clone this repo. Please use --recursive if you want to use the unit tests.
 After cloning the repo, change into that directory and execute:
 ```
