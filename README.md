@@ -11,18 +11,9 @@ Even though the library supports JSON and BSON, it's strongly recommended to use
 
 ## Compiling the library
 
-Before you can compile the library, you need to install [libbson](https://github.com/mongodb/libbson). In short, this can be accomplished by:
+Before you can compile the library, you need to install [libbson](https://github.com/mongodb/libbson). This can be accomplished by:
 ```
-wget https://github.com/mongodb/libbson/releases/download/1.5.3/libbson-1.5.3.tar.gz
-tar xzf libbson-1.5.3.tar.gz
-cd libbson-1.5.3
-./configure --prefix=$HOME/deps/libbson && make -j$(grep -c ^processor /proc/cpuinfo) && make install
-```
-Please note that libbson will not be installed system-wide to avoid interference with existing installations that might need libbson in a different version.
-To be able to find this library at link-time, we'll add the pkgconfig to our .bashrc to persist the change:
-```
-PKG_CONFIG_PATH=$PKG_CONFIG_PATH:~/deps/libbson/lib/pkgconfig/ >> ~/.bashrc
-source ~/.bashrc
+sudo apt install libbson-dev
 ```
 Now you can clone this repo. Please use --recursive if you want to use the unit tests.
 After cloning the repo, change into that directory and execute:
