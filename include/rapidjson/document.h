@@ -1986,7 +1986,9 @@ private:
         if (count) {
             GenericValue* e = static_cast<GenericValue*>(allocator.Malloc(count * sizeof(GenericValue)));
             SetElementsPointer(e);
-            std::memcpy(e, values, count * sizeof(GenericValue));
+            if (e != values) {
+                std::memcpy(e, values, count * sizeof(GenericValue));
+            }
         }
         else
             SetElementsPointer(0);
