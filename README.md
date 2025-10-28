@@ -66,21 +66,21 @@ The CMakeLists.txt builds both clients:
 - `websocket_client` - WebSocket client (default)
 - `tcp_client` - TCP client (for ROS1 compatibility)
 
-## Running the unit tests
-Please ensure that the you executed cmake with '-Dtest=on' before you continue.
-When the library and the unit tests are compiled, execute the following commands on a machine running ROS to setup a minimal testing environment:
-
-###  ROS2
+### ROS2 Example
 ```
+# Start the rosbridge websocket server:
 ros2 run rosbridge_server rosbridge_websocket
-ros2 topic pub /test std_msgs/String "data: 'a5424890996794277159554918'"
-ros2 run examples_rclcpp_minimal_service add_two_ints_server
+
+# Publish a simple string message to a topic:
+ros2 topic pub /test std_msgs/String "data: 'hello from ROS2'"
 ```
 
-### For ROS1
+### ROS1 Example
 ```
-roslaunch rosbridge_server rosbridge_websocket.launch # plus bson_only_mode:=True if you want to use BSON
-rostopic pub /test std_msgs/String a5424890996794277159554918
-rosrun rospy_tutorials add_two_ints_server
+# Start the rosbridge websocket server:
+roslaunch rosbridge_server rosbridge_websocket.launch
+
+# Publish a simple string message to a topic:
+rostopic pub /test std_msgs/String "data: 'hello from ROS1'"
 ```
 

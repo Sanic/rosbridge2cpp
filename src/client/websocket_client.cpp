@@ -33,9 +33,9 @@ int main()
   // ros.enable_bson_mode();
   
   std::cout << "Attempting to connect to ROSBridge server at ws://127.0.0.1:9090..." << std::endl;
-  if( !ros.Init("127.0.0.1", 9090))
+  if(!ros.Init("127.0.0.1", 9090))
   {
-    std::cerr << "Failed to connect to ROSBridge server!" << std::endl;
+    std::cerr << "Failed to connect to rosbridge websocket server!" << std::endl;
     std::cerr << "Please ensure that:" << std::endl;
     std::cerr << "1. ROS2 is running (ros2 run rosbridge_server rosbridge_websocket)" << std::endl;
     std::cerr << "2. ROSBridge WebSocket server is running:" << std::endl;
