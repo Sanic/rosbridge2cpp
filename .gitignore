@@ -34,5 +34,8 @@
 # VIM
 *.swp
 
+# VSCode
+.vscode/
+
 # Build files
 build/
