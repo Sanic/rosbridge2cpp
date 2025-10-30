@@ -65,12 +65,21 @@ ADD_EXECUTABLE( tcp_client
 	src/ros_tf_broadcaster.cpp 
 )
 
+# Comprehensive demo client showing multiple features
+# Links against the rosbridge2cpp library instead of compiling all sources
+ADD_EXECUTABLE( demo_client
+	src/client/demo_client.cpp 
+)
+
 ADD_LIBRARY( rosbridge2cpp SHARED
 	src/ros_bridge.cpp 
 	src/ros_topic.cpp 
 	src/ros_service.cpp 
 	src/ros_tf_broadcaster.cpp 
+	src/client/socket_websocket_connection.cpp 
+	src/client/socket_tcp_connection.cpp 
 )
 target_link_libraries(websocket_client ${LIBS})
 target_link_libraries(tcp_client ${LIBS})
+target_link_libraries(demo_client rosbridge2cpp ${LIBS})
 target_link_libraries(rosbridge2cpp ${LIBS})
