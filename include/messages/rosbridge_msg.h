@@ -1,9 +1,8 @@
 #pragma once
 
 #include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
 #include <unordered_map>
+#include <iostream>
 
 #include <bson.h>
 
