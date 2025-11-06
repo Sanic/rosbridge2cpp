@@ -1,5 +1,6 @@
 
 #include "ros_bridge.h"
+#include "ros_topic.h"
 #include <bson.h>
 
 namespace rosbridge2cpp {
