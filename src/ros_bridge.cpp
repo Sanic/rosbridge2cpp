@@ -27,8 +27,9 @@ namespace rosbridge2cpp {
 		{
 			while (queue.size())
 			{
-				bson_destroy(queue.front());
+				bson_t* msg = queue.front();
 				queue.pop();
+				bson_destroy(msg);
 			}
 		}
 	}
@@ -133,8 +134,9 @@ namespace rosbridge2cpp {
 			auto& queue = publisher_queues_[publisher_topics_[topic_name]];
 			if (queue_size > 0 && queue.size() >= queue_size) // make space if necessary
 			{
-				bson_destroy(queue.front());
+				bson_t* msg = queue.front();
 				queue.pop();
+				bson_destroy(msg);
 			}
 
 			queue.push(message);
