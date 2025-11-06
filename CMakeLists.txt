@@ -71,7 +71,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 # Main library target
-ADD_LIBRARY( rosbridge2cpp SHARED
+ADD_LIBRARY( rosbridge2cpp STATIC
 	src/ros_bridge.cpp 
 	src/ros_topic.cpp 
 	src/ros_service.cpp 
@@ -111,6 +111,22 @@ target_link_libraries(rosbridge2cpp
 if(WIN32 AND NOT PkgConfig_FOUND)
 	target_link_libraries(rosbridge2cpp PRIVATE "ws2_32")
 endif()
+
+# Copy to project lib directory (main project /lib, not install folder)
+add_custom_command(TARGET rosbridge2cpp POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/lib
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		$<TARGET_FILE:rosbridge2cpp>
+		${CMAKE_SOURCE_DIR}/lib/
+	COMMENT "Copying rosbridge2cpp library to lib directory"
+)
+
+# Install the library to install prefix (needed for installed executables)
+install(TARGETS rosbridge2cpp
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin
+)
 
 # Link example executables (only if they were built)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
