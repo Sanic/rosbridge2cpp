@@ -1,4 +1,6 @@
 #include "client/socket_websocket_connection.h"
+#include <sstream>
+#include <iomanip>
 
 namespace rosbridge2cpp{
 
@@ -12,9 +14,10 @@ namespace rosbridge2cpp{
     std::cout << "[WebSocketConnection] Initializing connection to " << uri_ << std::endl;
     
     try {
-      // Set logging to be pretty verbose (everything except message payloads)
+      // Set logging to be pretty verbose (everything except message payloads and frame headers)
       c_.set_access_channels(websocketpp::log::alevel::all);
       c_.clear_access_channels(websocketpp::log::alevel::frame_payload);
+      c_.clear_access_channels(websocketpp::log::alevel::frame_header);
       c_.set_error_channels(websocketpp::log::elevel::all);
       
       // Initialize ASIO
@@ -76,7 +79,13 @@ namespace rosbridge2cpp{
         std::cout << "[WebSocketConnection] Send failed: " << ec.message() << std::endl;
         return false;
       }
-      std::cout << "[WebSocketConnection] Data sent: " << data << std::endl;
+      
+      // Store the last sent message
+      {
+        std::lock_guard<std::mutex> lock(last_message_mutex_);
+        last_sent_message_ = data;
+      }
+      
       return true;
     } catch (websocketpp::exception const & e) {
       std::cout << "[WebSocketConnection] Send exception: " << e.what() << std::endl;
@@ -97,16 +106,31 @@ namespace rosbridge2cpp{
         std::cout << "[WebSocketConnection] Send failed: " << ec.message() << std::endl;
         return false;
       }
-      std::cout << "[WebSocketConnection] Data sent (" << length << " Bytes): " << std::endl;
-      for (unsigned int i = 0; i < length; i++) {
-        std::cout << ":" << std::setw(2) << std::setfill('0') << std::hex << (int)(data[i]);
+      
+      // Store binary message info as a formatted string
+      {
+        std::lock_guard<std::mutex> lock(last_message_mutex_);
+        std::ostringstream oss;
+        oss << "[Binary: " << length << " bytes]";
+        for (unsigned int i = 0; i < length && i < 32; i++) { // Limit to first 32 bytes for display
+          oss << ":" << std::setw(2) << std::setfill('0') << std::hex << (int)(data[i]);
+        }
+        if (length > 32) {
+          oss << "...";
+        }
+        last_sent_message_ = oss.str();
       }
-      std::cout << "[WebSocketConnection] Data end" << std::endl;
+      
       return true;
     } catch (websocketpp::exception const & e) {
       std::cout << "[WebSocketConnection] Send exception: " << e.what() << std::endl;
       return false;
     }
+  }
+
+  std::string SocketWebSocketConnection::GetLastSentMessage() const {
+    std::lock_guard<std::mutex> lock(last_message_mutex_);
+    return last_sent_message_;
   }
 
   int SocketWebSocketConnection::ReceiverThreadFunction(){

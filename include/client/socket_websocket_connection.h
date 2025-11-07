@@ -43,6 +43,7 @@ namespace rosbridge2cpp{
       bool Init(std::string p_ip_addr, int p_port);
       bool SendMessage(std::string data);
       bool SendMessage(const uint8_t *data, unsigned int length);
+      std::string GetLastSentMessage() const;
       int ReceiverThreadFunction();
       void RegisterIncomingMessageCallback(std::function<void(json&)> fun);
       void RegisterIncomingMessageCallback(std::function<void(bson_t&)> fun);
@@ -77,6 +78,9 @@ namespace rosbridge2cpp{
       
       std::mutex connection_mutex_;
       std::condition_variable connection_cv_;
+      
+      mutable std::string last_sent_message_;
+      mutable std::mutex last_message_mutex_;
       
       void on_open(connection_hdl hdl);
       void on_close(connection_hdl hdl);

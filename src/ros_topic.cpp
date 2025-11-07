@@ -151,6 +151,17 @@ namespace rosbridge2cpp {
 		cmd.msg_json_ = message;
 		cmd.latch_ = latch_;
 
+		// Convert message to string for storage
+		json alloc;
+		json full_message = cmd.ToJSON(alloc.GetAllocator());
+		std::string message_str = Helper::get_string_from_rapidjson(full_message);
+		
+		// Store the last published message
+		{
+			std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+			last_published_message_ = message_str;
+		}
+
 		//Queue is not implemented for JSON
 		return ros_.SendMessage(cmd);
 	}
@@ -173,6 +184,12 @@ namespace rosbridge2cpp {
 		cmd.msg_bson_ = message;
 		cmd.latch_ = latch_;
 
+		// Store binary message info
+		{
+			std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+			last_published_message_ = "[BSON message: " + std::to_string(message->len) + " bytes]";
+		}
+
 		return ros_.QueueMessage(topic_name_, queue_size_, cmd);
 	}
 
@@ -184,5 +201,11 @@ namespace rosbridge2cpp {
 		publish_id.append(":");
 		publish_id.append(std::to_string(++ros_.id_counter));
 		return publish_id;
+	}
+
+	std::string ROSTopic::GetLastPublishedMessage() const
+	{
+		std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+		return last_published_message_;
 	}
 }
