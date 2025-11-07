@@ -24,10 +24,14 @@ namespace rosbridge2cpp {
 		// Only to be used in json mode
 		void SendTransforms(json &geometry_msgs_transformstamped_array_msg);
 
+		// Send transforms to /tf_static (for static transforms)
+		void SendStaticTransforms(json &geometry_msgs_transformstamped_array_msg);
+
 		~ROSTFBroadcaster() = default;
 
 	private:
 		ROSBridge &ros_;
-		ROSTopic tf_topic_{ ros_,"/tf","tf/tfMessage" };
+		ROSTopic tf_topic_{ ros_,"/tf","tf2_msgs/msg/TFMessage" };
+		ROSTopic tf_static_topic_{ ros_,"/tf_static","tf2_msgs/msg/TFMessage" };
 	};
 }
