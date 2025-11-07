@@ -151,19 +151,20 @@ namespace rosbridge2cpp {
 		cmd.msg_json_ = message;
 		cmd.latch_ = latch_;
 
-		// Convert message to string for storage
-		json alloc;
-		json full_message = cmd.ToJSON(alloc.GetAllocator());
-		std::string message_str = Helper::get_string_from_rapidjson(full_message);
-		
-		// Store the last published message
-		{
-			std::lock_guard<std::mutex> lock(last_published_message_mutex_);
-			last_published_message_ = message_str;
-		}
-
 		// Try to send message
 		bool sent = ros_.SendMessage(cmd);
+		
+		// Store the last published message after successful send
+		// We serialize after sending to avoid allocator mismatch issues
+		if (sent) {
+			json alloc;
+			json full_message = cmd.ToJSON(alloc.GetAllocator());
+			std::string message_str = Helper::get_string_from_rapidjson(full_message);
+			{
+				std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+				last_published_message_ = message_str;
+			}
+		}
 		
 		// If send failed, reset advertised state and try to re-advertise and resend
 		// This handles the case where connection was lost and reconnected
@@ -206,14 +207,15 @@ namespace rosbridge2cpp {
 		cmd.msg_bson_ = message;
 		cmd.latch_ = latch_;
 
-		// Store binary message info
-		{
+		// Try to queue message
+		bool queued = ros_.QueueMessage(topic_name_, queue_size_, cmd);
+		
+		// Store the last published message after successful queue
+		// We serialize after queuing to avoid allocator mismatch issues
+		if (queued) {
 			std::lock_guard<std::mutex> lock(last_published_message_mutex_);
 			last_published_message_ = "[BSON message: " + std::to_string(message->len) + " bytes]";
 		}
-
-		// Try to queue message
-		bool queued = ros_.QueueMessage(topic_name_, queue_size_, cmd);
 		
 		// If queue failed, reset advertised state and try to re-advertise and requeue
 		// This handles the case where connection was lost and reconnected
