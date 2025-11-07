@@ -122,11 +122,11 @@ add_custom_command(TARGET rosbridge_client_cpp POST_BUILD
 )
 
 # Install the library to install prefix (needed for installed executables)
-install(TARGETS rosbridge_client_cpp
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	RUNTIME DESTINATION bin
-)
+# install(TARGETS rosbridge_client_cpp
+# 	LIBRARY DESTINATION lib
+# 	ARCHIVE DESTINATION lib
+# 	RUNTIME DESTINATION bin
+# )
 
 # Link example executables (only if they were built)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
