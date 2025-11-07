@@ -29,16 +29,22 @@ namespace rosbridge2cpp{
         std::cout << "[WebSocketConnection] Destructor called" << std::endl;
         if (is_connected_) {
           Disconnect();
-        }
-        terminate_receiver_thread_ = true;
-        terminate_reconnect_thread_ = true;
-        if (receiver_thread_set_up_) {
-          receiver_thread_.join();
         } else {
-          std::cout << "[WebSocketConnection] receiverThread hasn't been set up. Skipping join() on it" << std::endl;
-        }
-        if (reconnect_thread_set_up_) {
-          reconnect_thread_.join();
+          // Clean up threads even if connection failed
+          terminate_receiver_thread_ = true;
+          terminate_reconnect_thread_ = true;
+          if (receiver_thread_set_up_ && receiver_thread_.joinable()) {
+            receiver_thread_.join();
+          }
+          if (reconnect_thread_set_up_ && reconnect_thread_.joinable()) {
+            reconnect_thread_.join();
+          }
+          // Clean up ASIO thread if it was created
+          if (asio_thread_ && asio_thread_->joinable()) {
+            c_.stop_perpetual();
+            c_.stop();
+            asio_thread_->join();
+          }
         }
       }
 
