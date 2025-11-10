@@ -28,4 +28,16 @@ namespace rosbridge2cpp {
 	{
 		tf_topic_.Publish(&bson);
 	}
+
+	void ROSTFBroadcaster::SendStaticTransforms(json &geometry_msgs_transformstamped_array_msg)
+	{
+		assert(geometry_msgs_transformstamped_array_msg.IsArray());
+
+		rapidjson::Document tf_message;
+		tf_message.SetObject();
+
+		tf_message.AddMember("transforms", geometry_msgs_transformstamped_array_msg, tf_message.GetAllocator());
+
+		tf_static_topic_.Publish(tf_message);
+	}
 }

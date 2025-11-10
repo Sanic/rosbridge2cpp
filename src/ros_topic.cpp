@@ -151,8 +151,42 @@ namespace rosbridge2cpp {
 		cmd.msg_json_ = message;
 		cmd.latch_ = latch_;
 
-		//Queue is not implemented for JSON
-		return ros_.SendMessage(cmd);
+		// Try to send message
+		bool sent = ros_.SendMessage(cmd);
+		
+		// Store the last published message after successful send
+		// We serialize after sending to avoid allocator mismatch issues
+		if (sent) {
+			json alloc;
+			json full_message = cmd.ToJSON(alloc.GetAllocator());
+			std::string message_str = Helper::get_string_from_rapidjson(full_message);
+			{
+				std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+				last_published_message_ = message_str;
+			}
+		}
+		
+		// If send failed, reset advertised state and try to re-advertise and resend
+		// This handles the case where connection was lost and reconnected
+		if (!sent && is_advertised_) {
+			std::cout << "[ROSTopic] Send failed, resetting advertised state for topic: " << topic_name_ << std::endl;
+			is_advertised_ = false;
+			advertise_id_ = "";
+			
+			// Try to re-advertise
+			if (Advertise()) {
+				// Retry sending
+				std::string retry_publish_id = GeneratePublishID();
+				ROSBridgePublishMsg retry_cmd(true);
+				retry_cmd.id_ = retry_publish_id;
+				retry_cmd.topic_ = topic_name_;
+				retry_cmd.msg_json_ = message;
+				retry_cmd.latch_ = latch_;
+				sent = ros_.SendMessage(retry_cmd);
+			}
+		}
+		
+		return sent;
 	}
 
 	bool ROSTopic::Publish(bson_t *message)
@@ -173,7 +207,37 @@ namespace rosbridge2cpp {
 		cmd.msg_bson_ = message;
 		cmd.latch_ = latch_;
 
-		return ros_.QueueMessage(topic_name_, queue_size_, cmd);
+		// Try to queue message
+		bool queued = ros_.QueueMessage(topic_name_, queue_size_, cmd);
+		
+		// Store the last published message after successful queue
+		// We serialize after queuing to avoid allocator mismatch issues
+		if (queued) {
+			std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+			last_published_message_ = "[BSON message: " + std::to_string(message->len) + " bytes]";
+		}
+		
+		// If queue failed, reset advertised state and try to re-advertise and requeue
+		// This handles the case where connection was lost and reconnected
+		if (!queued && is_advertised_) {
+			std::cout << "[ROSTopic] Queue failed, resetting advertised state for topic: " << topic_name_ << std::endl;
+			is_advertised_ = false;
+			advertise_id_ = "";
+			
+			// Try to re-advertise
+			if (Advertise()) {
+				// Retry queuing
+				std::string retry_publish_id = GeneratePublishID();
+				ROSBridgePublishMsg retry_cmd(true);
+				retry_cmd.id_ = retry_publish_id;
+				retry_cmd.topic_ = topic_name_;
+				retry_cmd.msg_bson_ = message;
+				retry_cmd.latch_ = latch_;
+				queued = ros_.QueueMessage(topic_name_, queue_size_, retry_cmd);
+			}
+		}
+		
+		return queued;
 	}
 
 	std::string ROSTopic::GeneratePublishID()
@@ -184,5 +248,11 @@ namespace rosbridge2cpp {
 		publish_id.append(":");
 		publish_id.append(std::to_string(++ros_.id_counter));
 		return publish_id;
+	}
+
+	std::string ROSTopic::GetLastPublishedMessage() const
+	{
+		std::lock_guard<std::mutex> lock(last_published_message_mutex_);
+		return last_published_message_;
 	}
 }

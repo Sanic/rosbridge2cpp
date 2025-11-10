@@ -26,24 +26,36 @@ namespace rosbridge2cpp{
       SocketWebSocketConnection() = default;
       
       ~SocketWebSocketConnection() {
-        std::cout << "WebSocket Connection Destructor called" << std::endl;
+        std::cout << "[WebSocketConnection] Destructor called" << std::endl;
         if (is_connected_) {
           Disconnect();
-        }
-        terminate_receiver_thread_ = true;
-        if (receiver_thread_set_up_) {
-          std::cout << "Thread is set up: Calling .join() on it" << std::endl;
-          receiver_thread_.join();
-          std::cout << "join() in Connection Destructor done" << std::endl;
         } else {
-          std::cout << "receiverThread hasn't been set up. Skipping join() on it" << std::endl;
+          // Clean up threads even if connection failed
+          terminate_receiver_thread_ = true;
+          terminate_reconnect_thread_ = true;
+          if (receiver_thread_set_up_ && receiver_thread_.joinable()) {
+            receiver_thread_.join();
+          }
+          if (reconnect_thread_set_up_ && reconnect_thread_.joinable()) {
+            reconnect_thread_.join();
+          }
+          // Clean up ASIO thread if it was created
+          if (asio_thread_ && asio_thread_->joinable()) {
+            c_.stop_perpetual();
+            c_.stop();
+            asio_thread_->join();
+          }
         }
       }
 
       bool Init(std::string p_ip_addr, int p_port);
       bool SendMessage(std::string data);
       bool SendMessage(const uint8_t *data, unsigned int length);
+      std::string GetLastSentMessage() const;
+      bool IsConnected() const;
       int ReceiverThreadFunction();
+      void ReconnectThreadFunction();
+      bool AttemptReconnect();
       void RegisterIncomingMessageCallback(std::function<void(json&)> fun);
       void RegisterIncomingMessageCallback(std::function<void(bson_t&)> fun);
       void RegisterErrorCallback(std::function<void(TransportError)> fun);
@@ -68,16 +80,34 @@ namespace rosbridge2cpp{
       bool terminate_receiver_thread_ = false;
       bool receiver_thread_set_up_ = false;
       bool is_connected_ = false;
+      bool is_reconnecting_ = false;
       bool callback_function_defined_ = false;
       bool bson_only_mode_ = false;
+      bool auto_reconnect_ = true;
+      bool terminate_reconnect_thread_ = false;
+      std::thread reconnect_thread_;
+      bool reconnect_thread_set_up_ = false;
       
       std::function<void(json&)> incoming_message_callback_;
       std::function<void(bson_t&)> incoming_message_callback_bson_;
       std::function<void(TransportError)> error_callback_ = nullptr;
       
-      std::mutex connection_mutex_;
+      mutable std::mutex connection_mutex_;
       std::condition_variable connection_cv_;
       
+      mutable std::string last_sent_message_;
+      mutable std::mutex last_message_mutex_;
+      
+      // Reconnection state tracking
+      mutable std::mutex reconnect_mutex_;
+      bool last_send_failed_logged_ = false;
+      
+      // Helper functions
+      void RegisterWebSocketHandlers();
+      void SetupASIOThread();
+      bool IsConnectedOrReconnecting() const;
+      
+      // WebSocket event handlers
       void on_open(connection_hdl hdl);
       void on_close(connection_hdl hdl);
       void on_fail(connection_hdl hdl);

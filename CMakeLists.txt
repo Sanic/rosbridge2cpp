@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-set(PROJECT_NAME rosbridge2cpp)
+set(PROJECT_NAME rosbridge_client_cpp)
 project(${PROJECT_NAME})
 
 message(STATUS "Ready to build ${PROJECT_NAME}")
@@ -21,18 +21,11 @@ else()
 endif()
 
 if(NOT WIN32)
-	set(CMAKE_CXX_FLAGS "-g -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 endif()
 
-set(CXX_STANDARD C++11)
-add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
-add_definitions(-DBSON_STATIC=1)
-
-# Include directories
-include_directories(${LIBBSON_INCLUDE_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${LIBBSON_LIBRARY_DIRS})
-add_definitions(${LIBBSON_CFLAGS_OTHER})
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Libraries
 set(LIBS ${LIBS} ${LIBBSON_LIBRARIES})
@@ -43,43 +36,101 @@ if(WIN32 AND NOT PkgConfig_FOUND)
 	set(LIBS ${LIBS} "ws2_32") # Needed by libbson on windows 
 endif()
 
-INCLUDE_DIRECTORIES( include)
+# Example executables (only built when this is the main project)
+# These compile sources directly for demonstration purposes
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	#WebSocket Client
+	ADD_EXECUTABLE( websocket_client
+		src/client/websocket_client.cpp 
+		src/client/socket_websocket_connection.cpp 
+		src/ros_bridge.cpp 
+		src/ros_topic.cpp 
+		src/ros_service.cpp 
+		src/ros_tf_broadcaster.cpp 
+	)
+	target_include_directories(websocket_client PRIVATE include ${LIBBSON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+	target_compile_definitions(websocket_client PRIVATE RAPIDJSON_HAS_STDSTRING=1 BSON_STATIC=1 ${LIBBSON_CFLAGS_OTHER})
 
-#WebSocket Client
-ADD_EXECUTABLE( websocket_client
-	src/client/websocket_client.cpp 
+	# Alternative TCP client (for ROS1 compatibility)
+	ADD_EXECUTABLE( tcp_client
+		src/client/tcp_client.cpp 
+		src/client/socket_tcp_connection.cpp 
+		src/ros_bridge.cpp 
+		src/ros_topic.cpp 
+		src/ros_service.cpp 
+		src/ros_tf_broadcaster.cpp 
+	)
+	target_include_directories(tcp_client PRIVATE include ${LIBBSON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+	target_compile_definitions(tcp_client PRIVATE RAPIDJSON_HAS_STDSTRING=1 BSON_STATIC=1 ${LIBBSON_CFLAGS_OTHER})
+
+	# Comprehensive demo client showing multiple features
+	# Links against the rosbridge_client_cpp library instead of compiling all sources
+	ADD_EXECUTABLE( demo_client
+		src/client/demo_client.cpp 
+	)
+endif()
+
+# Main library target
+ADD_LIBRARY( rosbridge_client_cpp STATIC
+	src/ros_bridge.cpp 
+	src/ros_topic.cpp 
+	src/ros_service.cpp 
+	src/ros_tf_broadcaster.cpp 
 	src/client/socket_websocket_connection.cpp 
-	src/ros_bridge.cpp 
-	src/ros_topic.cpp 
-	src/ros_service.cpp 
-	src/ros_tf_broadcaster.cpp 
-)
-
-# Alternative TCP client (for ROS1 compatibility)
-ADD_EXECUTABLE( tcp_client
-	src/client/tcp_client.cpp 
-	src/client/socket_tcp_connection.cpp 
-	src/ros_bridge.cpp 
-	src/ros_topic.cpp 
-	src/ros_service.cpp 
-	src/ros_tf_broadcaster.cpp 
-)
-
-# Comprehensive demo client showing multiple features
-# Links against the rosbridge2cpp library instead of compiling all sources
-ADD_EXECUTABLE( demo_client
-	src/client/demo_client.cpp 
-)
-
-ADD_LIBRARY( rosbridge2cpp SHARED
-	src/ros_bridge.cpp 
-	src/ros_topic.cpp 
-	src/ros_service.cpp 
-	src/ros_tf_broadcaster.cpp 
-	src/client/socket_websocket_connection.cpp 
 	src/client/socket_tcp_connection.cpp 
 )
-target_link_libraries(websocket_client ${LIBS})
-target_link_libraries(tcp_client ${LIBS})
-target_link_libraries(demo_client rosbridge2cpp ${LIBS})
-target_link_libraries(rosbridge2cpp ${LIBS})
+
+# Configure the library target with proper include directories and definitions
+target_include_directories(rosbridge_client_cpp
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+		$<BUILD_INTERFACE:${LIBBSON_INCLUDE_DIRS}>
+		$<INSTALL_INTERFACE:${LIBBSON_INCLUDE_DIRS}>
+	PRIVATE
+		${Boost_INCLUDE_DIRS}
+)
+
+target_link_directories(rosbridge_client_cpp PRIVATE ${LIBBSON_LIBRARY_DIRS})
+
+target_compile_definitions(rosbridge_client_cpp
+	PUBLIC
+		RAPIDJSON_HAS_STDSTRING=1
+	PRIVATE
+		BSON_STATIC=1
+		${LIBBSON_CFLAGS_OTHER}
+)
+
+target_link_libraries(rosbridge_client_cpp
+	PRIVATE
+		${LIBBSON_LIBRARIES}
+		${CMAKE_THREAD_LIBS_INIT}
+		${Boost_LIBRARIES}
+)
+
+if(WIN32 AND NOT PkgConfig_FOUND)
+	target_link_libraries(rosbridge_client_cpp PRIVATE "ws2_32")
+endif()
+
+# Copy to project lib directory (main project /lib, not install folder)
+add_custom_command(TARGET rosbridge_client_cpp POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/lib
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		$<TARGET_FILE:rosbridge_client_cpp>
+		${CMAKE_SOURCE_DIR}/lib/
+	COMMENT "Copying rosbridge_client_cpp library to lib directory"
+)
+
+# Install the library to install prefix (needed for installed executables)
+# install(TARGETS rosbridge_client_cpp
+# 	LIBRARY DESTINATION lib
+# 	ARCHIVE DESTINATION lib
+# 	RUNTIME DESTINATION bin
+# )
+
+# Link example executables (only if they were built)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	target_link_libraries(websocket_client ${LIBS})
+	target_link_libraries(tcp_client ${LIBS})
+	target_link_libraries(demo_client rosbridge_client_cpp ${LIBS})
+endif()

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <list>
+#include <mutex>
+#include <string>
 
 #include "rapidjson/document.h"
 
@@ -83,6 +85,9 @@ namespace rosbridge2cpp{
 		return topic_name_;
 	}
 
+	// Get the last published message as a string representation
+	std::string GetLastPublishedMessage() const;
+
 	private:
 		ROSBridge &ros_;
 		std::string topic_name_;
@@ -103,5 +108,9 @@ namespace rosbridge2cpp{
 
 		// Count how many callbacks are currently registered in the ROSBridge instance
 		int subscription_counter_ = 0;
+
+		// Store the last published message
+		mutable std::string last_published_message_;
+		mutable std::mutex last_published_message_mutex_;
 	};
 }
