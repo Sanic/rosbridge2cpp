@@ -50,6 +50,12 @@ namespace rosbridge2cpp {
 			return service_name_;
 		}
 
+		// Check if the service is actually advertised on the ROS side via rosapi
+		// This queries the ROS system to verify the service is available
+		// @param timeout_ms Timeout in milliseconds (default: 2000ms)
+		// @return true if service is found in ROS, false if not found or timeout
+		bool isAdvertised(int timeout_ms = 2000) const;
+
 	private:
 		ROSBridge &ros_;
 		std::string service_name_;
