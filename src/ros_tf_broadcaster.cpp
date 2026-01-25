@@ -1,4 +1,6 @@
 #include "ros_tf_broadcaster.h"
+#include <thread>
+#include <chrono>
 
 namespace rosbridge2cpp {
 	void ROSTFBroadcaster::SendTransform(json &geometry_msgs_transformstamped_msg)
@@ -39,5 +41,18 @@ namespace rosbridge2cpp {
 		tf_message.AddMember("transforms", geometry_msgs_transformstamped_array_msg, tf_message.GetAllocator());
 
 		tf_static_topic_.Publish(tf_message);
+	}
+
+	bool ROSTFBroadcaster::AdvertiseStaticTopic()
+	{
+		// Always ensure /tf_static is advertised before publishing
+		// Unadvertise first to force re-advertisement (handles stale state after reconnection)
+		tf_static_topic_.Unadvertise();
+		bool success = tf_static_topic_.Advertise();
+		// Small delay to allow rosbridge to process the advertise message
+		if (success) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+		return success;
 	}
 }

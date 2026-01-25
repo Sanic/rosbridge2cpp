@@ -27,6 +27,10 @@ namespace rosbridge2cpp {
 		// Send transforms to /tf_static (for static transforms)
 		void SendStaticTransforms(json &geometry_msgs_transformstamped_array_msg);
 
+		// Advertise /tf_static topic (unadvertises first to handle reconnection)
+		// @return true if topic was successfully advertised, false otherwise
+		bool AdvertiseStaticTopic();
+
 		~ROSTFBroadcaster() = default;
 
 	private:

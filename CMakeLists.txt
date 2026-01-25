@@ -9,15 +9,36 @@ find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Threads REQUIRED)
 
+# Find libbson - prefer static library for deployment
 if(PkgConfig_FOUND)
-	pkg_search_module(LIBBSON REQUIRED libbson-1.0)
+	pkg_search_module(LIBBSON libbson-1.0)
+endif()
+
+# Try to find static libbson library (required for deployment without installing libraries on target)
+find_library(LIBBSON_STATIC_LIB 
+	NAMES bson-static-1.0 libbson-static-1.0
+	PATHS ${LIBBSON_LIBRARY_DIRS} /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+)
+
+if(LIBBSON_STATIC_LIB)
+	message(STATUS "Found static libbson: ${LIBBSON_STATIC_LIB}")
+	set(LIBBSON_LIBRARIES ${LIBBSON_STATIC_LIB})
+	# Ensure we have include dirs
+	if(NOT LIBBSON_INCLUDE_DIRS AND PkgConfig_FOUND)
+		pkg_search_module(LIBBSON libbson-1.0)
+	endif()
+	if(NOT LIBBSON_INCLUDE_DIRS)
+		find_path(LIBBSON_INCLUDE_DIRS 
+			NAMES bson.h
+			PATHS /usr/include /usr/local/include
+			PATH_SUFFIXES libbson-1.0
+		)
+	endif()
 else()
-	message(STATUS "Didn't found PkgConfig, please specify the path yourself")
-	set(LIBBSON_DIR "" CACHE PATH "Install directory of libbson. Should contain /include and /lib")
-	set(LIBBSON_INCLUDE_DIRS "${LIBBSON_DIR}/include")
-	set(LIBBSON_LIBRARY_DIRS "${LIBBSON_DIR}/lib")
-	set(LIBBSON_CFLAGS_OTHER "-I${LIBBSON_INCLUDE_DIRS}/libbson-1.0")
-	set(LIBBSON_LIBRARIES "bson-static-1.0.lib" CACHE STRING "Lib file. Different between platforms")
+	# Static library not found - fail the build
+	message(FATAL_ERROR 
+		"Static libbson library (libbson-static-1.0.a) not found!\n"
+	)
 endif()
 
 if(NOT WIN32)

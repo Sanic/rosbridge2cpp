@@ -48,10 +48,10 @@ namespace rosbridge2cpp{
 	}
 
 	bool ROSService::Advertise(FunVrROSCallServiceMsgrROSServiceResponseMsgrAllocator callback) {
-		if (is_advertised_)
-			return true;
-
-		// Register on ROSBridge
+		// Always try to advertise - if already advertised and connection is good, 
+		// the send will succeed and we'll update the callback. If connection was lost,
+		// the send will fail and is_advertised_ will be set to false, allowing retry.
+		// Register on ROSBridge (this will update the callback even if already registered)
 		ros_.RegisterServiceRequestCallback(service_name_, callback);
 
 		ROSBridgeAdvertiseServiceMsg cmd(true);
@@ -63,10 +63,10 @@ namespace rosbridge2cpp{
 	}
 
 	bool ROSService::Advertise(FunVrROSCallServiceMsgrROSServiceResponseMsg callback) {
-		if (is_advertised_)
-			return true;
-
-		// Register on ROSBridge
+		// Always try to advertise - if already advertised and connection is good, 
+		// the send will succeed and we'll update the callback. If connection was lost,
+		// the send will fail and is_advertised_ will be set to false, allowing retry.
+		// Register on ROSBridge (this will update the callback even if already registered)
 		ros_.RegisterServiceRequestCallback(service_name_, callback);
 
 		ROSBridgeAdvertiseServiceMsg cmd(true);
